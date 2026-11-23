@@ -195,6 +195,39 @@ function adimlar(e) {
   }));
 }
 
+const PANO_KOLONLARI = [['KAYITLI', 'Kayıtlı'], ['HAVALEDE', 'Havalede'], ['IMZA_BEKLIYOR', 'İmza bekliyor'], ['TAMAMLANDI', 'Tamamlandı']];
+
+async function evrakPano() {
+  const s = await api('/api/evraklar?' + sorgu({ boyut: 100, sirala: 'SURE_YAKIN' }));
+  const kolonlar = PANO_KOLONLARI.map(([durum, ad]) => {
+    const liste = s.content.filter((e) => e.durum === durum);
+    return el('section', { sinif: 'pano-kolon' },
+      el('h3', null, ad, el('span', null, liste.length)),
+      liste.length ? liste.map((e) => el('button', { type: 'button', sinif: 'pano-kart' + (e.aciliyet === 'ACELE' || e.gecikmis ? ' acele' : '') + (e.gizlilik === 'GIZLI' ? ' gizli' : ''), onclick: () => git('#/evrak/' + e.id) },
+        el('small', null, (e.kayitNo || 'Sayı verilmedi') + ' · ' + YON[e.yon]),
+        el('b', null, e.konu), el('small', null, e.ilgiliKurum),
+        e.cevapSuresiSonu ? el('small', null, 'Son: ' + tarih(e.cevapSuresiSonu), ' ', sure(e.kalanIsGunu, e.gecikmis)) : null))
+        : el('div', { sinif: 'bos' }, 'Boş'));
+  });
+  return el('div', null, el('h2', null, 'Evrak panosu'),
+    el('p', { sinif: 'soluk' }, 'Durumuna göre evraklar; kırmızı kenarlı kartlar acele veya süresi geçmiş, mor kenarlı kartlar GİZLİ evraktır.'),
+    el('div', { sinif: 'pano' }, kolonlar));
+}
+
+function olayAkisi(e, sevkler) {
+  const olaylar = [];
+  olaylar.push([e.kayitZamani, e.yon === 'GELEN' ? 'Evrak kaydedildi' : 'Taslak oluşturuldu', e.olusturan]);
+  for (const sv of sevkler) {
+    olaylar.push([sv.sevkZamani, 'Havale: ' + sv.hedefBirim + (sv.hedefKullanici ? ' / ' + sv.hedefKullanici : ''), sv.sevkEden + (sv.talimat ? ' — ' + sv.talimat : '')]);
+    if (sv.alinmaZamani) olaylar.push([sv.alinmaZamani, 'Teslim alındı', sv.hedefKullanici || sv.hedefBirim]);
+  }
+  if (e.imzaZamani) olaylar.push([e.imzaZamani, 'İmzalandı (' + e.kayitNo + ')', e.imzalayan]);
+  if (e.arsivTarihi) olaylar.push([e.arsivTarihi + 'T23:59:00', 'Arşivlendi (' + e.dosyaKodu + ')', e.imhaTarihi ? 'İmha tarihi ' + tarih(e.imhaTarihi) : 'Süresiz saklanır']);
+  olaylar.sort((x, y) => String(x[0]).localeCompare(String(y[0])));
+  return el('ol', { sinif: 'zaman-cizgisi' }, olaylar.map(([z, baslik, alt]) =>
+    el('li', null, el('strong', null, baslik), el('small', null, zaman(z) + (alt ? ' · ' + alt : '')))));
+}
+
 async function gelenKutusu(sayfa = 0) {
   const s = await api('/api/evraklar/gelen-kutusu?' + sorgu({ sayfa, boyut: 15 }));
   const satirlar = s.content.map((e) => el('tr', { sinif: 'tikla', onclick: () => git('#/evrak/' + e.id) },
@@ -216,10 +249,17 @@ function giris() {
   const form = el('form', { sinif: 'kart giris', onsubmit: async (o) => {
     o.preventDefault(); hata.textContent = '';
     try { oturumuYaz(await post('/api/auth/giris', { kullaniciAdi: ad.value.trim(), sifre: sifre.value })); git('#/'); } catch (h) { hata.textContent = h.message; }
-  } }, el('h2', null, 'Giriş'),
+  } }, el('h2', null, 'Oturum aç'),
   el('div', { sinif: 'alan' }, el('label', { for: 'ka' }, 'Kullanıcı adı'), ad),
   el('div', { sinif: 'alan' }, el('label', { for: 'ks' }, 'Parola'), sifre), hata, el('button', { type: 'submit' }, 'Giriş yap'));
-  return form;
+  const tanitim = el('section', { sinif: 'giris-tanitim' },
+    el('h1', null, 'Evrak ve bilgi edinme başvurularınız tek yerde'),
+    el('p', null, 'Gelen ve giden evrakı havale zinciriyle izleyin, cevap sürelerini iş gününe göre takip edin, 4982 başvurularını süresinde sonuçlandırın.'),
+    el('ul', null,
+      el('li', null, 'Birim ve gizlilik dereceli görünürlük'),
+      el('li', null, 'Görevler ayrılığıyla imza ve süreç adımları'),
+      el('li', null, 'Arşiv, imha tarihi ve değiştirilemez denetim kaydı')));
+  return el('div', { sinif: 'giris-sahne' }, tanitim, el('div', { sinif: 'giris-form' }, form));
 }
 
 async function ozetSayfasi() {
@@ -353,7 +393,8 @@ async function evrakDetay(id) {
       e.dosyaKodu && ['Dosya kodu', e.dosyaKodu], e.arsivTarihi && ['Arşiv tarihi', tarih(e.arsivTarihi)],
       e.durum === 'ARSIVLENDI' && ['İmha tarihi', e.imhaTarihi ? tarih(e.imhaTarihi) : 'Süresiz saklanır']]),
     eylemler.length ? el('div', { sinif: 'eylemler' }, eylemler) : null),
-    e.yon === 'GELEN' ? [el('h3', null, 'Havale zinciri'), tablo(['Zaman', 'Havale eden', 'Hedef', 'Talimat', 'Durum', ''], sevkSatir, 'Henüz havale edilmedi')] : null);
+    e.yon === 'GELEN' ? [el('h3', null, 'Havale zinciri'), tablo(['Zaman', 'Havale eden', 'Hedef', 'Talimat', 'Durum', ''], sevkSatir, 'Henüz havale edilmedi')] : null,
+    el('h3', null, 'Olay akışı'), olayAkisi(e, sevkler));
 }
 
 async function havaleEt(e, yenile) {
@@ -483,6 +524,7 @@ const MENU = [
   ['#/', 'Genel bakış', () => true],
   ['#/kutu', 'Gelen kutum', () => rolde(BIRIM_ROLLERI)],
   ['#/evraklar', 'Evraklar', () => rolde(EVRAK_OKUYAN)],
+  ['#/pano', 'Evrak panosu', () => rolde(EVRAK_OKUYAN)],
   ['#/bilgi-edinme', 'Bilgi edinme', () => rolde(BE_OKUYAN, 'KAYIT_MEMURU')],
   ['#/arsiv', 'Arşiv', () => rolde(ARSIV_OKUYAN)],
   ['#/denetim', 'Denetim kaydı', () => rolde(DENETIM_OKUYAN)],
@@ -492,7 +534,8 @@ const MENU = [
 function menuyuCiz() {
   const menu = document.getElementById('menu');
   const kutu = document.getElementById('kullanici');
-  menu.hidden = kutu.hidden = !oturum;
+  document.body.classList.toggle('oturumlu', !!oturum);
+  document.getElementById('yan').hidden = !oturum;
   menu.replaceChildren();
   if (!oturum) return;
   const hash = location.hash || '#/';
@@ -501,7 +544,9 @@ function menuyuCiz() {
     const aktif = h === '#/' ? hash === '#/' : hash.startsWith(h) || (h === '#/evraklar' && hash.startsWith('#/evrak/')) || (h === '#/bilgi-edinme' && hash.startsWith('#/basvuru/'));
     menu.append(el('button', { type: 'button', sinif: 'menu-dugme' + (aktif ? ' aktif' : ''), onclick: () => git(h) }, ad));
   }
-  document.getElementById('kullanici-bilgi').textContent = oturum.adSoyad + ' · ' + ROL[oturum.rol];
+  const bilgi = document.getElementById('kullanici-bilgi');
+  bilgi.replaceChildren(el('strong', null, oturum.adSoyad), el('small', null, ROL[oturum.rol]));
+  document.getElementById('avatar').textContent = oturum.adSoyad.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 }
 
 async function yonlendir() {
@@ -514,6 +559,7 @@ async function yonlendir() {
     if (h === '#/') sayfa = await ozetSayfasi();
     else if (h === '#/kutu') sayfa = await gelenKutusu();
     else if (h === '#/evraklar') sayfa = await evrakListe();
+    else if (h === '#/pano') sayfa = await evrakPano();
     else if (h.startsWith('#/evrak/')) sayfa = await evrakDetay(h.slice(8));
     else if (h === '#/bilgi-edinme') sayfa = rolde(BE_OKUYAN) ? await bilgiListe() : el('div', null, el('h2', null, 'Bilgi edinme'), el('button', { type: 'button', onclick: basvuruForm }, 'Başvuru kaydet'));
     else if (h.startsWith('#/basvuru/')) sayfa = await basvuruDetay(h.slice(10));

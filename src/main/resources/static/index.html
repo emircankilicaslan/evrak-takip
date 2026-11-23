@@ -5,18 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Evrak Takip</title>
   <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/gorunum.css">
 </head>
 <body>
-  <header class="ust">
-    <h1>Evrak Takip</h1>
-    <nav id="menu" hidden></nav>
-    <div id="kullanici" class="kullanici" hidden>
-      <span id="kullanici-bilgi"></span>
-      <button type="button" id="sifre-degistir" class="ikincil">Parolamı değiştir</button>
+  <aside class="yan" id="yan" hidden>
+    <div class="marka">
+      <span class="marka-isaret" aria-hidden="true"></span>
+      <span>Evrak Takip<small>Evrak ve başvuru yönetimi</small></span>
+    </div>
+    <nav id="menu" aria-label="Ana menü"></nav>
+    <div id="kullanici" class="kullanici">
+      <div class="kisi"><span class="avatar" id="avatar"></span><span id="kullanici-bilgi"></span></div>
+      <button type="button" id="sifre-degistir" class="ikincil">Parola</button>
       <button type="button" id="cikis" class="ikincil">Çıkış</button>
     </div>
-  </header>
+  </aside>
 
   <main id="icerik" tabindex="-1"></main>
   <div id="bildirim" role="status" aria-live="polite" class="bildirim" hidden></div>

@@ -48,7 +48,7 @@ async function cek(sayfa, ad, secenek = {}) {
 
 // 1) Giriş
 {
-  const s = await sayfaAc({ viewport: { width: 1280, height: 620 } });
+  const s = await sayfaAc({ viewport: { width: 1280, height: 760 } });
   await s.goto(BASE + '/');
   await s.waitForSelector('#ka');
   await cek(s, 'giris');
@@ -60,6 +60,10 @@ async function cek(sayfa, ad, secenek = {}) {
   const s = await sayfaAc();
   await girisYap(s, 'yonetici');
   await cek(s, 'genel-bakis', { fullPage: true });
+
+  // Pano görünümü
+  await git(s, '#/pano', '.pano');
+  await cek(s, 'evrak-pano', { fullPage: true });
 
   // 3) Evrak listesi ve arama
   await git(s, '#/evraklar', 'table');

@@ -24,6 +24,7 @@ Kurumlar için **elektronik evrak yönetimi (EBYS) ve 4982 sayılı Bilgi Edinme
 <details>
 <summary>Diğer ekranlar</summary>
 
+![Evrak panosu](docs/screenshots/evrak-pano.jpg)
 ![Evrak listesi](docs/screenshots/evrak-liste.jpg)
 ![Bilgi edinme listesi](docs/screenshots/bilgi-edinme-liste.jpg)
 ![Gelen evrak formu](docs/screenshots/gelen-evrak-formu.jpg)
@@ -56,7 +57,9 @@ Ekran görüntüleri elle yazılmış değildir: `Ekran görüntüleri` iş akı
 ### Panel
 - Rol bazlı **genel bakış**: bekleyen/geciken sayıları, son altı ayın gelen-giden grafiği, birimlerdeki açık evrak yükü.
 - Birim personeli ve amiri için **gelen kutusu** (bana ya da birimime havale edilmiş, süresi en yakın olan üstte).
-- Evrak ayrıntısında **süreç adımları** (kayıt → havale → tamamlandı → arşiv), açık/koyu tema, mobil uyumlu.
+- Durumuna göre evrakları gösteren **pano (kanban) görünümü**; acele/geciken ve GİZLİ kartlar renkle ayrılır.
+- Evrak ayrıntısında **süreç adımları** (kayıt → havale → tamamlandı → arşiv) ve zaman çizelgesi biçiminde **olay akışı**.
+- Koyu yan menülü yerleşim, açık/koyu tema, mobil uyumlu.
 
 ### Ortak
 - 8 rol (kayıt memuru, birim personeli, birim amiri, üst yönetici, bilgi edinme sorumlusu, arşiv sorumlusu, denetçi, yönetici) ve birim bazlı yetki.
