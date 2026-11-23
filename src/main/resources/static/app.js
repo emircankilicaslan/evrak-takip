@@ -176,7 +176,7 @@ function birimGrafigi(yuk) {
   const parcalar = [];
   yuk.forEach((b, i) => {
     const y = 4 + i * satir;
-    const genislik = ((W - 250) * b.acik) / en;
+    const genislik = ((W - 300) * b.acik) / en;
     parcalar.push(
       svg('text', { x: 0, y: y + 17, class: 'eksen-yatay' }, b.birim.length > 34 ? b.birim.slice(0, 33) + '…' : b.birim),
       svg('rect', { x: 240, y, width: Math.max(genislik, b.acik ? 4 : 0), height: 20, rx: 4, class: 'cubuk-gelen' }),
