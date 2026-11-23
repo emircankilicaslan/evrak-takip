@@ -152,7 +152,14 @@ public final class Dto {
             long imzaBekleyen,
             long bilgiEdinmeAcik,
             long bilgiEdinmeGeciken,
-            long bilgiEdinmeYaklasan) {}
+            long bilgiEdinmeYaklasan,
+            long gelenKutusu) {}
+
+    public record AylikSayi(String ay, long gelen, long giden) {}
+
+    public record BirimYuku(String birim, long acik) {}
+
+    public record GrafikYaniti(java.util.List<AylikSayi> aylik, java.util.List<BirimYuku> birimYuku) {}
 
     public record DenetimYaniti(
             Long id, LocalDateTime zaman, String kullaniciAdi, String islem,

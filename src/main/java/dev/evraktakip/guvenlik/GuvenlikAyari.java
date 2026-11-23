@@ -34,7 +34,7 @@ public class GuvenlikAyari {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/auth/giris", "/actuator/health").permitAll()
                         // Arayüz dosyaları herkese açıktır; veri yalnızca /api üzerinden ve oturumla gelir.
-                        .requestMatchers("/", "/index.html", "/app.js", "/style.css", "/favicon.ico").permitAll()
+                        .requestMatchers("/", "/index.html", "/app.js", "/style.css", "/gorunum.css", "/favicon.ico").permitAll()
                         // API sözleşmesi (Swagger arayüzü ve OpenAPI belgesi) açıktır; uç noktalar yine oturum ister.
                         .requestMatchers("/swagger", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated())

@@ -142,6 +142,71 @@ function tablo(basliklar, satirlar, bos) {
 }
 const sure = (kalan, gecikmis) => (kalan == null ? null : gecikmis ? rozet(Math.abs(kalan) + ' iş günü gecikti', 'uyari') : rozet(kalan + ' iş günü kaldı', kalan <= 3 ? 'durum-DEGERLENDIRMEDE' : ''));
 
+const SVGNS = 'http://www.w3.org/2000/svg';
+function svg(etiket, oz, ...cocuklar) {
+  const d = document.createElementNS(SVGNS, etiket);
+  for (const [k, v] of Object.entries(oz || {})) d.setAttribute(k, v);
+  for (const c of cocuklar.flat()) if (c != null) d.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return d;
+}
+const ayAdi = (ay) => new Date(ay + '-01T00:00:00').toLocaleDateString('tr-TR', { month: 'short' });
+
+function aylikGrafik(aylik) {
+  const W = 560, H = 210, ust = 22, alt = 30;
+  const en = Math.max(1, ...aylik.flatMap((a) => [a.gelen, a.giden]));
+  const kolon = (W - 24) / aylik.length;
+  const yuk = (n) => ((H - ust - alt) * n) / en;
+  const parcalar = [svg('line', { x1: 12, y1: H - alt, x2: W - 12, y2: H - alt, class: 'eksen-cizgi' })];
+  aylik.forEach((a, i) => {
+    const x = 12 + i * kolon;
+    const g = yuk(a.gelen), c = yuk(a.giden);
+    parcalar.push(
+      svg('rect', { x: x + kolon * 0.12, y: H - alt - g, width: kolon * 0.36, height: g, rx: 3, class: 'cubuk-gelen' }),
+      svg('rect', { x: x + kolon * 0.52, y: H - alt - c, width: kolon * 0.36, height: c, rx: 3, class: 'cubuk-giden' }),
+      a.gelen ? svg('text', { x: x + kolon * 0.3, y: H - alt - g - 5, 'text-anchor': 'middle', class: 'deger' }, a.gelen) : null,
+      a.giden ? svg('text', { x: x + kolon * 0.7, y: H - alt - c - 5, 'text-anchor': 'middle', class: 'deger' }, a.giden) : null,
+      svg('text', { x: x + kolon / 2, y: H - 10, 'text-anchor': 'middle', class: 'eksen' }, ayAdi(a.ay)));
+  });
+  return svg('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'grafik', role: 'img', 'aria-label': 'Son altı ayın gelen ve giden evrak sayısı' }, parcalar);
+}
+
+function birimGrafigi(yuk) {
+  const satir = 30, W = 560, H = Math.max(60, yuk.length * satir + 8);
+  const en = Math.max(1, ...yuk.map((b) => b.acik));
+  const parcalar = [];
+  yuk.forEach((b, i) => {
+    const y = 4 + i * satir;
+    const genislik = ((W - 250) * b.acik) / en;
+    parcalar.push(
+      svg('text', { x: 0, y: y + 17, class: 'eksen-yatay' }, b.birim.length > 34 ? b.birim.slice(0, 33) + '…' : b.birim),
+      svg('rect', { x: 240, y, width: Math.max(genislik, b.acik ? 4 : 0), height: 20, rx: 4, class: 'cubuk-gelen' }),
+      svg('text', { x: 246 + Math.max(genislik, 4), y: y + 15, class: 'deger-yatay' }, b.acik));
+  });
+  return svg('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'grafik', role: 'img', 'aria-label': 'Birimlerdeki açık evrak sayısı' }, parcalar);
+}
+
+function adimlar(e) {
+  const adlar = e.yon === 'GELEN' ? ['Kayıt', 'Havale', 'Tamamlandı', 'Arşiv'] : ['Taslak', 'İmzada', 'İmzalandı', 'Arşiv'];
+  const sira = { TASLAK: 0, KAYITLI: 0, IMZA_BEKLIYOR: 1, HAVALEDE: 1, TAMAMLANDI: 2, ARSIVLENDI: 3 }[e.durum];
+  return el('ol', { sinif: 'adimlar', 'aria-label': 'Süreç adımları' }, adlar.map((a, i) => {
+    const gecti = i < sira || (i === sira && sira === 3);
+    return el('li', { sinif: gecti ? 'gecti' : i === sira ? 'simdi' : '', 'aria-current': i === sira ? 'step' : false },
+      el('span', { sinif: 'adim-no' }, gecti ? '✓' : i + 1), a);
+  }));
+}
+
+async function gelenKutusu(sayfa = 0) {
+  const s = await api('/api/evraklar/gelen-kutusu?' + sorgu({ sayfa, boyut: 15 }));
+  const satirlar = s.content.map((e) => el('tr', { sinif: 'tikla', onclick: () => git('#/evrak/' + e.id) },
+    el('td', null, e.kayitNo), el('td', null, e.konu), el('td', null, e.ilgiliKurum),
+    el('td', null, e.aciliyet !== 'NORMAL' ? rozet(ACILIYET[e.aciliyet], 'uyari') : '-'),
+    el('td', null, e.cevapSuresiSonu ? [tarih(e.cevapSuresiSonu), ' ', sure(e.kalanIsGunu, e.gecikmis)] : '-')));
+  return el('div', null, el('h2', null, 'Gelen kutum'),
+    el('p', { sinif: 'soluk' }, 'Bana (amirsem birimime) havale edilen ve henüz tamamlanmamış evraklar; cevap süresi en yakın olan üstte.'),
+    tablo(['Kayıt no', 'Konu', 'Gönderen', 'Aciliyet', 'Cevap süresi'], satirlar, 'Bekleyen işiniz yok'),
+    sayfalama(s, (n) => dene(async () => { document.getElementById('icerik').replaceChildren(await gelenKutusu(n)); })));
+}
+
 // ------------------------------------------------------------------ sayfalar
 
 function giris() {
@@ -172,7 +237,18 @@ async function ozetSayfasi() {
     kartlar.push(kart('Süresi yaklaşan (3 iş günü)', o.bilgiEdinmeYaklasan, () => git('#/bilgi-edinme')));
     kartlar.push(kart('Süresi geçen başvuru', o.bilgiEdinmeGeciken, () => { beSuzgec = { ...beSuzgec, geciken: true }; git('#/bilgi-edinme'); }, true));
   }
-  return el('div', null, el('h2', null, 'Genel bakış'), el('div', { sinif: 'ozet' }, kartlar));
+  if (rolde(BIRIM_ROLLERI)) kartlar.unshift(kart('Gelen kutum', o.gelenKutusu, () => git('#/kutu'), true));
+  let grafikler = null;
+  if (rolde(EVRAK_OKUYAN)) {
+    const g = await api('/api/ozet/grafik');
+    grafikler = el('div', { sinif: 'grafik-izgara' },
+      el('section', { sinif: 'kart' }, el('h3', { sinif: 'kart-baslik' }, 'Aylık evrak sayısı'),
+        el('div', { sinif: 'lejant' }, el('span', { sinif: 'lejant-gelen' }, 'Gelen'), el('span', { sinif: 'lejant-giden' }, 'Giden')), aylikGrafik(g.aylik)),
+      el('section', { sinif: 'kart' }, el('h3', { sinif: 'kart-baslik' }, 'Birimlerde açık evrak'), birimGrafigi(g.birimYuku)));
+  }
+  const selam = el('div', { sinif: 'selam' }, el('h2', null, 'Merhaba, ' + oturum.adSoyad.split(' ')[0]),
+    el('p', { sinif: 'soluk' }, ROL[oturum.rol] + ' · ' + new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })));
+  return el('div', null, selam, el('div', { sinif: 'ozet' }, kartlar), grafikler);
 }
 
 async function evrakListe(sayfa = 0) {
@@ -261,7 +337,7 @@ async function evrakDetay(id) {
       eylem('Teslim al', async () => { if (await dene(() => post('/api/evraklar/sevkler/' + s.id + '/teslim-al'), 'Teslim alındı')) yenile(); }, 'kucuk'))));
   return el('div', null,
     el('div', { sinif: 'arac' }, el('button', { type: 'button', sinif: 'ikincil', onclick: () => git('#/evraklar') }, '← Evraklar')),
-    el('h2', null, e.konu),
+    el('h2', null, e.konu), adimlar(e),
     el('div', { sinif: 'kart' }, alanDl([
       ['Kayıt no', e.kayitNo || '(imzada verilir)'], ['Yön', YON[e.yon]], ['Durum', rozet(EVRAK_DURUM[e.durum], 'durum-' + e.durum)],
       ['İlgili kurum', e.ilgiliKurum], ['Evrak tarihi', tarih(e.evrakTarihi)], ['Evrakın sayısı', e.disSayi],
@@ -401,6 +477,7 @@ async function kullaniciSayfasi() {
 
 const MENU = [
   ['#/', 'Genel bakış', () => true],
+  ['#/kutu', 'Gelen kutum', () => rolde(BIRIM_ROLLERI)],
   ['#/evraklar', 'Evraklar', () => rolde(EVRAK_OKUYAN)],
   ['#/bilgi-edinme', 'Bilgi edinme', () => rolde(BE_OKUYAN, 'KAYIT_MEMURU')],
   ['#/arsiv', 'Arşiv', () => rolde(ARSIV_OKUYAN)],
@@ -431,6 +508,7 @@ async function yonlendir() {
   try {
     let sayfa;
     if (h === '#/') sayfa = await ozetSayfasi();
+    else if (h === '#/kutu') sayfa = await gelenKutusu();
     else if (h === '#/evraklar') sayfa = await evrakListe();
     else if (h.startsWith('#/evrak/')) sayfa = await evrakDetay(h.slice(8));
     else if (h === '#/bilgi-edinme') sayfa = rolde(BE_OKUYAN) ? await bilgiListe() : el('div', null, el('h2', null, 'Bilgi edinme'), el('button', { type: 'button', onclick: basvuruForm }, 'Başvuru kaydet'));

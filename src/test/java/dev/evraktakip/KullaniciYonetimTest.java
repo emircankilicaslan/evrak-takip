@@ -21,10 +21,6 @@ class KullaniciYonetimTest extends EntegrasyonTemeli {
                 .formatted(ad, YENI, rol, birimId);
     }
 
-    private long kimlik(String kullaniciAdi) {
-        return kullanicilar.findByKullaniciAdi(kullaniciAdi).orElseThrow().getId();
-    }
-
     // -------------------------------------------------------------- listeleme ve yetki
 
     @Test

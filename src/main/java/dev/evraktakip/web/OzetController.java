@@ -4,7 +4,9 @@ import dev.evraktakip.domain.EvrakDurumu;
 import dev.evraktakip.guvenlik.KullaniciDetay;
 import dev.evraktakip.servis.BilgiEdinmeServisi;
 import dev.evraktakip.servis.EvrakServisi;
+import dev.evraktakip.web.Dto.GrafikYaniti;
 import dev.evraktakip.web.Dto.OzetYaniti;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +30,14 @@ public class OzetController {
         var durumlar = evraklar.durumSayilari(k.kullanici());
         var be = basvurular.ozet(k.kullanici());
         return new OzetYaniti(durumlar, evraklar.gecikenSayisi(k.kullanici()),
-                durumlar.get(EvrakDurumu.IMZA_BEKLIYOR), be.acik(), be.geciken(), be.yaklasan());
+                durumlar.get(EvrakDurumu.IMZA_BEKLIYOR), be.acik(), be.geciken(), be.yaklasan(),
+                evraklar.gelenKutusuSayisi(k.kullanici()));
+    }
+
+    /** Son altı ayın gelen/giden evrak sayısı ve birimlerdeki açık (havalede) evrak yükü. */
+    @GetMapping("/grafik")
+    @PreAuthorize("hasAnyRole('KAYIT_MEMURU','BIRIM_PERSONELI','BIRIM_AMIRI','UST_YONETICI','ARSIV_SORUMLUSU','DENETCI')")
+    public GrafikYaniti grafik(@AuthenticationPrincipal KullaniciDetay k) {
+        return evraklar.grafik(k.kullanici());
     }
 }

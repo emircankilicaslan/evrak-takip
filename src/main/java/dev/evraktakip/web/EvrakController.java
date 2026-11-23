@@ -49,6 +49,17 @@ public class EvrakController {
         return servis.listele(k.kullanici(), filtre, istek);
     }
 
+    /** Teslim alınmayı veya tamamlanmayı bekleyen, bana ya da (amirsem) birimime havale edilmiş evraklar. */
+    @GetMapping("/gelen-kutusu")
+    @PreAuthorize("hasAnyRole('BIRIM_PERSONELI','BIRIM_AMIRI')")
+    public Page<EvrakYaniti> gelenKutusu(@AuthenticationPrincipal KullaniciDetay k,
+                                         @RequestParam(defaultValue = "0") int sayfa,
+                                         @RequestParam(defaultValue = "15") int boyut) {
+        var istek = PageRequest.of(Math.max(sayfa, 0), Math.min(Math.max(boyut, 1), EN_COK_SAYFA_BOYUTU),
+                EvrakSiralama.SURE_YAKIN.sort());
+        return servis.gelenKutusu(k.kullanici(), istek);
+    }
+
     @GetMapping("/{id}")
     public EvrakDetayYaniti detay(@AuthenticationPrincipal KullaniciDetay k, @PathVariable Long id) {
         return servis.detay(k.kullanici(), id);

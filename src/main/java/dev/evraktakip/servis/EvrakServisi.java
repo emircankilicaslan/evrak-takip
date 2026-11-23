@@ -109,6 +109,44 @@ public class EvrakServisi {
     }
 
     @Transactional(readOnly = true)
+    public Page<EvrakYaniti> gelenKutusu(Kullanici k, Pageable sayfa) {
+        IsGunuTakvimi takvim = takvimServisi.takvim();
+        LocalDate bugun = bugun();
+        return evraklar.findAll(gorunur(k).and(bendeBekleyen(k)), sayfa).map(e -> yanit(e, takvim, bugun));
+    }
+
+    @Transactional(readOnly = true)
+    public long gelenKutusuSayisi(Kullanici k) {
+        return k.getRol().birimleSinirli() ? evraklar.count(gorunur(k).and(bendeBekleyen(k))) : 0;
+    }
+
+    /** Son altı ay (kayıt zamanına göre) ve birim bazında açık evrak; yalnızca görünür kayıtlar sayılır. */
+    @Transactional(readOnly = true)
+    public GrafikYaniti grafik(Kullanici k) {
+        java.time.YearMonth bu = java.time.YearMonth.from(bugun());
+        List<AylikSayi> aylik = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            java.time.YearMonth ay = bu.minusMonths(i);
+            LocalDateTime bas = ay.atDay(1).atStartOfDay();
+            LocalDateTime son = ay.plusMonths(1).atDay(1).atStartOfDay();
+            Specification<Evrak> aralik = (kok, sorgu, cb) -> cb.and(
+                    cb.greaterThanOrEqualTo(kok.<LocalDateTime>get("kayitZamani"), bas),
+                    cb.lessThan(kok.<LocalDateTime>get("kayitZamani"), son));
+            long gelen = evraklar.count(gorunur(k).and(aralik).and(yonIle(EvrakYonu.GELEN)));
+            long giden = evraklar.count(gorunur(k).and(aralik).and(yonIle(EvrakYonu.GIDEN)));
+            aylik.add(new AylikSayi(ay.toString(), gelen, giden));
+        }
+        List<BirimYuku> yuk = new ArrayList<>();
+        for (Birim b : birimler.findAll(Sort.by("ad"))) {
+            Specification<Evrak> birimde = (kok, sorgu, cb) -> cb.and(
+                    cb.equal(kok.get("durum"), EvrakDurumu.HAVALEDE),
+                    cb.equal(kok.join("birim").get("id"), b.getId()));
+            yuk.add(new BirimYuku(b.getAd(), evraklar.count(gorunur(k).and(birimde))));
+        }
+        return new GrafikYaniti(aylik, yuk);
+    }
+
+    @Transactional(readOnly = true)
     public Page<EvrakYaniti> imhaAdaylari(Kullanici k, Pageable sayfa) {
         LocalDate bugun = bugun();
         IsGunuTakvimi takvim = takvimServisi.takvim();
@@ -446,6 +484,29 @@ public class EvrakServisi {
                 cb.equal(s.get("evrak"), kok),
                 cb.or(cb.equal(hedef.get("id"), k.getId()), cb.equal(eden.get("id"), k.getId())));
         return cb.exists(alt);
+    }
+
+    private static Specification<Evrak> yonIle(EvrakYonu yon) {
+        return (kok, sorgu, cb) -> cb.equal(kok.get("yon"), yon);
+    }
+
+    /** HAVALEDE evrak; açık (bekliyor/alındı) sevk bana, amirsem birimime çevrilmiş. */
+    private static Specification<Evrak> bendeBekleyen(Kullanici k) {
+        return (kok, sorgu, cb) -> {
+            Subquery<Long> alt = sorgu.subquery(Long.class);
+            Root<Sevk> s = alt.from(Sevk.class);
+            Join<Sevk, Kullanici> hedef = s.join("hedefKullanici", JoinType.LEFT);
+            Join<Sevk, Birim> hedefBirim = s.join("hedefBirim");
+            Predicate kisiye = cb.equal(hedef.get("id"), k.getId());
+            Predicate birime = k.getRol() == BIRIM_AMIRI && k.getBirim() != null
+                    ? cb.and(cb.isNull(s.get("hedefKullanici")), cb.equal(hedefBirim.get("id"), k.getBirim().getId()))
+                    : cb.disjunction();
+            alt.select(s.get("id")).where(
+                    cb.equal(s.get("evrak"), kok),
+                    s.get("durum").in(SevkDurumu.BEKLIYOR, SevkDurumu.ALINDI),
+                    cb.or(kisiye, birime));
+            return cb.and(cb.equal(kok.get("durum"), EvrakDurumu.HAVALEDE), cb.exists(alt));
+        };
     }
 
     private static Specification<Evrak> durumIle(EvrakDurumu durum) {
