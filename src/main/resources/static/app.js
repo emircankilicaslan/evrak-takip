@@ -237,6 +237,10 @@ async function ozetSayfasi() {
     kartlar.push(kart('Süresi yaklaşan (3 iş günü)', o.bilgiEdinmeYaklasan, () => git('#/bilgi-edinme')));
     kartlar.push(kart('Süresi geçen başvuru', o.bilgiEdinmeGeciken, () => { beSuzgec = { ...beSuzgec, geciken: true }; git('#/bilgi-edinme'); }, true));
   }
+  if (rolde('ADMIN')) {
+    kartlar.push(kart('Kullanıcı yönetimi', '→', () => git('#/kullanicilar')));
+    kartlar.push(kart('Denetim kaydı', '→', () => git('#/denetim')));
+  }
   if (rolde(BIRIM_ROLLERI)) kartlar.unshift(kart('Gelen kutum', o.gelenKutusu, () => git('#/kutu'), true));
   let grafikler = null;
   if (rolde(EVRAK_OKUYAN)) {

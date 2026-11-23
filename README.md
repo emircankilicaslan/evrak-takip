@@ -4,6 +4,40 @@ Kurumlar için **elektronik evrak yönetimi (EBYS) ve 4982 sayılı Bilgi Edinme
 
 **Java 21 · Spring Boot 3 · Oracle (Flyway) · JWT + Active Directory/LDAP · JUnit 5 · Docker · GitHub Actions**
 
+![Genel bakış](docs/screenshots/genel-bakis.jpg)
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/evrak-havale-zinciri.jpg" alt="Evrak ayrıntısı ve havale zinciri"><br><sub>Evrak ayrıntısı, süreç adımları ve havale zinciri</sub></td>
+    <td><img src="docs/screenshots/gelen-kutusu.jpg" alt="Gelen kutusu"><br><sub>Birim amirinin gelen kutusu</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/giden-imza.jpg" alt="İmza bekleyen giden evrak"><br><sub>İmza bekleyen giden evrak</sub></td>
+    <td><img src="docs/screenshots/bilgi-edinme-detay.jpg" alt="Bilgi edinme başvurusu"><br><sub>Bilgi edinme başvurusu: süre, uzatma, birim görüşü</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/evrak-gizli.jpg" alt="Gizli evrak"><br><sub>GİZLİ evrak (yalnızca işlem zincirine görünür)</sub></td>
+    <td><img src="docs/screenshots/koyu-tema.jpg" alt="Koyu tema"><br><sub>Koyu tema</sub></td>
+  </tr>
+</table>
+
+<details>
+<summary>Diğer ekranlar</summary>
+
+![Evrak listesi](docs/screenshots/evrak-liste.jpg)
+![Bilgi edinme listesi](docs/screenshots/bilgi-edinme-liste.jpg)
+![Gelen evrak formu](docs/screenshots/gelen-evrak-formu.jpg)
+![Arşivlenmiş evrak](docs/screenshots/arsiv-evrak.jpg)
+![Denetim kaydı](docs/screenshots/denetim-kaydi.jpg)
+![Kullanıcı yönetimi](docs/screenshots/kullanicilar.jpg)
+![Mobil](docs/screenshots/mobil.jpg)
+![Swagger](docs/screenshots/swagger.jpg)
+![Giriş](docs/screenshots/giris.jpg)
+
+</details>
+
+Ekran görüntüleri elle yazılmış değildir: `Ekran görüntüleri` iş akışı uygulamayı Oracle ile ayağa kaldırır, örnek veriyi gerçek API ve iş kurallarından geçirerek yükler ve tarayıcıdan görüntü alır.
+
 ## Neler yapar?
 
 ### Evrak yönetimi
@@ -18,6 +52,11 @@ Kurumlar için **elektronik evrak yönetimi (EBYS) ve 4982 sayılı Bilgi Edinme
 - **15 iş günü** cevap süresi, gerekçeli ve **tek seferlik** uzatma (ek süre mevcut süre sonuna eklenir), yetkisiz kuruma **yönlendirme** süresi, cevap/ret sonrası **itiraz son tarihi**.
 - Ret için ret nedeni + gerekçe zorunlu.
 - **KVKK**: T.C. kimlik numarası sağlama basamaklarıyla doğrulanır ve yalnızca **maskeli** saklanır; listelerde ve dışa aktarmada başvuran adı maskelidir; ayrıntı ekranının her açılışı denetim kaydına yazılır.
+
+### Panel
+- Rol bazlı **genel bakış**: bekleyen/geciken sayıları, son altı ayın gelen-giden grafiği, birimlerdeki açık evrak yükü.
+- Birim personeli ve amiri için **gelen kutusu** (bana ya da birimime havale edilmiş, süresi en yakın olan üstte).
+- Evrak ayrıntısında **süreç adımları** (kayıt → havale → tamamlandı → arşiv), açık/koyu tema, mobil uyumlu.
 
 ### Ortak
 - 8 rol (kayıt memuru, birim personeli, birim amiri, üst yönetici, bilgi edinme sorumlusu, arşiv sorumlusu, denetçi, yönetici) ve birim bazlı yetki.

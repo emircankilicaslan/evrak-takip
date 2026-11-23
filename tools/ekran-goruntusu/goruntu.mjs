@@ -30,7 +30,7 @@ async function girisYap(sayfa, kullanici) {
   await sayfa.fill('#ka', kullanici);
   await sayfa.fill('#ks', SIFRE);
   await sayfa.click('button[type=submit]');
-  await sayfa.waitForSelector('.ozet');
+  await sayfa.waitForSelector('.selam');
   await sayfa.waitForLoadState('networkidle');
 }
 
