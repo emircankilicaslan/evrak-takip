@@ -102,7 +102,7 @@ public final class Dto {
 
     public record BasvuruIstegi(
             @NotBlank @Size(max = 200) String basvuranAd,
-            @Pattern(regexp = "\d{11}", message = "T.C. kimlik numarası 11 rakam olmalıdır") String tcKimlikNo,
+            @Pattern(regexp = "[0-9]{11}", message = "T.C. kimlik numarası 11 rakam olmalıdır") String tcKimlikNo,
             @Size(max = 300) String iletisim,
             @NotNull BasvuruKanali kanal,
             @NotBlank @Size(max = 1000) String konu,
