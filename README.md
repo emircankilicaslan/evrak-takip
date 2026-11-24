@@ -106,6 +106,9 @@ mvn verify
 
 Entegrasyon testleri **gerçek Oracle** (Testcontainers yerine CI'daki `gvenzl/oracle-free` servisi veya yerel `DB_URL`) ve gerçek güvenlik zinciriyle çalışır; zaman, ayarlanabilir saatle ilerletilerek süre/gecikme senaryoları sınanır. CI her itmede derler, test eder, Docker imajını Oracle'a karşı açıp duman testi yapar.
 
+## Hız sınırı
+Hesap kilidi tek bir hesabı korur; `/api` altındaki istekler ayrıca **istemci (IP) bazlı** olarak dakikada sınırlanır: giriş denemesi 10, yazma (POST/PUT/PATCH/DELETE) 120, okuma 600. Sınır aşılınca RFC 7807 biçiminde `429` ve `Retry-After` başlığı döner. Arayüz dosyaları ve `/actuator/health` sınırın dışındadır. Değerler `evrak.hiz-siniri.*` ile değiştirilir; ters vekil arkasında `evrak.hiz-siniri.guvenilir-vekil=true` verilirse istemci adresi `X-Forwarded-For` başlığındaki son girdidir (başlığı sahtelenebilen doğrudan erişimde açılmamalıdır). Sayaçlar bellektedir; yalnızca tek uygulama örneği için yeterlidir.
+
 ## Yapılandırma ve mevzuat uyarısı
 
 Cevap, uzatma, yönlendirme ve itiraz süreleri `application.yml` içindeki `evrak.kurallar` altında **örnek değerlerdir**; kurum kendi mevzuat yorumuna göre ayarlamalıdır (koda gömülü kural yoktur). Dosya planı kodları ve saklama süreleri de örnektir; kurum kendi standart dosya planını yükler. Bu proje bir portfolyo/örnek çalışmadır, resmî bir EBYS değildir ve e-imza/KEP entegrasyonu içermez.
